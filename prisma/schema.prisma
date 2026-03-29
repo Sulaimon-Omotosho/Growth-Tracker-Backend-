@@ -1,0 +1,279 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url = env("DATABASE_URL")
+}
+
+
+// Enums
+enum Role {
+  CAMPUS_PASTOR
+  PASTOR
+  TEAM
+  HOD
+  DISTRICT
+  ZONE
+  CELL
+  MEMBER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum ReportType {
+  WEEKLY
+  MONTHLY
+}
+
+enum CourseStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+// USER & AUTH
+model User {
+  id         String  @id @default(uuid())
+  email      String  @unique
+  password  String?
+  username   String? @unique
+  firstName  String?
+  lastName   String?
+  phone      String?
+  gender     Gender?
+  role       Role    @default(MEMBER)
+  image      String?
+  about      String?
+  dob        DateTime?
+  provider   String?
+  providerId String?
+
+  // Address relation
+  addressId String?
+  address   Address? @relation(fields: [addressId], references: [id])
+
+  districtId  String?
+  communityId String?
+  zoneId      String?
+  cellId      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  growthRecord GrowthRecord?
+
+
+  districtsLed District[] @relation("DistrictLeader")
+  leadsCommunity  Community[]  @relation("CommunityLeader")
+  leadsZone       Zone[]       @relation("ZonalLeader")
+  leadsCell       Cell[]       @relation("CellLeader")
+  leadsChurchTeam ChurchTeam[] @relation("TeamPastor")
+  leadsDepartment Department[] @relation("HOD")
+
+  district    District?    @relation("DistrictUsers", fields: [districtId], references: [id])
+  community   Community?   @relation(fields: [communityId], references: [id])
+  zone        Zone?        @relation(fields: [zoneId], references: [id])
+  cell        Cell?        @relation(fields: [cellId], references: [id])
+  departments Department[] @relation("UserDepartments")
+
+  reports Report[] @relation("UserReports")
+}
+
+// Address model
+model Address {
+  id       String @id @default(uuid())
+  street   String?
+  city     String
+  state    String
+  country  String
+  zipCode  String?
+
+  users User[]
+}
+
+// NextAuth models
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// CHURCH STRUCTURE
+model District {
+  id   String @id @default(uuid())
+  name String
+
+  leaderId String? 
+  leader   User?   @relation("DistrictLeader", fields: [leaderId], references: [id])
+
+  communities Community[]
+  users       User[] @relation("DistrictUsers")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Community {
+  id         String @id @default(uuid())
+  name       String
+  districtId String
+
+  leaderId String? 
+  leader   User?   @relation("CommunityLeader", fields: [leaderId], references: [id])
+
+  district District @relation(fields: [districtId], references: [id])
+  zones    Zone[]
+  cells    Cell[]
+  users    User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Zone {
+  id          String @id @default(uuid())
+  name        String
+  communityId String
+
+  leaderId String? 
+  leader   User?   @relation("ZonalLeader", fields: [leaderId], references: [id])
+
+  community Community @relation(fields: [communityId], references: [id])
+  cells     Cell[]
+  users     User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cell {
+  id          String @id @default(uuid())
+  name        String
+  zoneId      String
+  communityId String
+
+  leaderId String? 
+  leader   User?   @relation("CellLeader", fields: [leaderId], references: [id])
+
+  community Community @relation(fields: [communityId], references: [id])
+  zone      Zone      @relation(fields: [zoneId], references: [id])
+  users     User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// DEPARTMENTS & TEAMS
+model ChurchTeam {
+  id          String @id @default(uuid())
+  name        String
+  description String?
+
+  leaderId String? 
+  leader   User?   @relation("TeamPastor", fields: [leaderId], references: [id])
+
+  departments Department[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Department {
+  id           String @id @default(uuid())
+  name         String
+  churchTeamId String
+  email        String?
+  description  String?
+
+  leaderId String? 
+  leader   User?   @relation("HOD", fields: [leaderId], references: [id])
+
+  churchTeam ChurchTeam @relation(fields: [churchTeamId], references: [id])
+  teams      DepTeam[]
+  members    User[]     @relation("UserDepartments")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DepTeam {
+  id           String  @id @default(uuid())
+  name         String
+  departmentId String
+  leaderId     String?
+
+  department Department @relation(fields: [departmentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// GROWTH TRACKING
+model GrowthRecord {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  baptism          Boolean      @default(false)
+  foundationCourse CourseStatus @default(NOT_STARTED)
+  maturityCourse   CourseStatus @default(NOT_STARTED)
+  joinedDepartment Boolean      @default(false)
+  joinedCell       Boolean      @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+
+  updatedAt DateTime @updatedAt
+}
+
+// REPORTS
+model Report {
+  id      String     @id @default(uuid())
+  title   String
+  type    ReportType
+  content String
+
+  authorId   String
+  zoneId     String?
+  districtId String?
+  cellId     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User @relation("UserReports", fields: [authorId], references: [id])
+}
