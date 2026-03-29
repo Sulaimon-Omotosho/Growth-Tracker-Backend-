@@ -5,6 +5,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ChurchModule } from './modules/church/church.module';
 import { UsersModule } from './modules/users/users.module';
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from './modules/auth/guards/roles/roles.guard';
 
 @Module({
   imports: [
@@ -18,5 +20,11 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
   ],
   controllers: [HealthController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}

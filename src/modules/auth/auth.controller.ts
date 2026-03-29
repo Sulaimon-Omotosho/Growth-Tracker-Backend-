@@ -11,6 +11,14 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { Request, Response } from 'express';
+import { Roles } from './decorators/roles.decorators';
+import { Role } from 'src/common/enum';
+import {
+  GoogleDto,
+  LoginDto,
+  RegisterDto,
+  UpdateRoleDto,
+} from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -37,30 +45,33 @@ export class AuthController {
 
   @Post('login')
   async login(
-    @Body() body: { email: string; password: string },
+    @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const data = await this.auth.login(body.email, body.password);
+    const data = await this.auth.login(loginDto.email, loginDto.password);
     this.setAuthCookies(res, data);
     return { user: data.user };
   }
 
   @Post('register')
   async register(
-    @Body() body: { email: string; password: string },
+    @Body() registerDto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const data = await this.auth.register(body.email, body.password);
+    const data = await this.auth.register(
+      registerDto.email,
+      registerDto.password,
+    );
     this.setAuthCookies(res, data);
     return { user: data.user };
   }
 
   @Post('google')
   async google(
-    @Body('token') token: string,
+    @Body('token') googleDto: GoogleDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const data = await this.auth.googleAuth(token);
+    const data = await this.auth.googleAuth(googleDto.token);
     this.setAuthCookies(res, data);
     return { user: data.user };
   }
@@ -92,8 +103,9 @@ export class AuthController {
   }
 
   @Patch('users/:id/role')
-  updateRole(@Param('id') id: string, @Body() body: any) {
-    return this.auth.updateRole(id, body.role);
+  @Roles(Role.CAMPUS_PASTOR, Role.PASTOR)
+  updateRole(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
+    return this.auth.updateRole(id, updateRoleDto.role);
   }
 
   @Get('health')
