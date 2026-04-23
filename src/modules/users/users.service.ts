@@ -1,9 +1,13 @@
 import {
+  BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UpdateUserDto } from './dto/users.dto';
 
 @Injectable()
 export class UsersService {
@@ -28,6 +32,31 @@ export class UsersService {
     });
   }
 
+  // Check Username Availability
+  async isUsernameTaken(
+    username: string,
+    excludeUserId?: string,
+  ): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+
+    if (!user) return false;
+    return user.id !== excludeUserId;
+  }
+
+  // Check Email Availability
+async isEmailTaken(email: string, excludeId?: string): Promise<boolean> {
+  const count = await this.prisma.user.count({
+    where: {
+      email: { equals: email, mode: 'insensitive' },
+      NOT: excludeId ? { id: excludeId } : undefined,
+    },
+  });
+  return count > 0;
+}
+
   // Me
   async getMe(user: any) {
     if (!user.id) throw new ForbiddenException('Unauthenticated');
@@ -35,14 +64,61 @@ export class UsersService {
     const found = await this.prisma.user.findUnique({
       where: { id: user.id },
       include: {
-        cell: true,
-        departments: true,
+        cell: {include: {
+          leader: true,
+
+        }},
+        departments: {include: {
+          leader: true,
+          churchTeam: true,
+        }},
+        zone: true,
         growthRecord: true,
+        address: true,
+        _count: {
+        select: {
+          leadsCell: true,
+          leadsChurchTeam: true,
+          leadsCommunity: true,
+          hod: true,
+          leadsSubTeam: true,
+          districtsLed: true,
+            leadsZone: true,},}
       },
     });
 
     if (!found) throw new NotFoundException('User not found');
     return found;
+  }
+
+  // Get User Groups
+  async getUserGroups(userId: string) {
+    return this.prisma.user.findUnique({
+      where: {id: userId},
+      select: {
+        cell: {
+          include: {
+            users: {
+              select: {id:true, image: true, firstName: true}
+            }
+          }
+        },
+        departments: {
+          include: {
+            members: {
+              select: {id: true, image: true, firstName: true}
+            }
+          }
+        },
+        smallGroups: {
+          include: {
+            members: {
+              select: {id: true, image: true, firstName: true}
+            }
+          }
+        }
+      }
+    })
   }
 
   // All Users
@@ -76,28 +152,28 @@ export class UsersService {
   }
 
   // Update Profile
-  async updateMe(user: any, body: any) {
-    if (!user?.id) throw new ForbiddenException();
+  async updateMe(userId: string, body: UpdateUserDto) {
+    if (!userId) throw new BadRequestException('User ID is required');
 
-    const { username } = body;
+    const { username, email, ...rest } = body;
 
     if (username) {
-      const existing = await this.prisma.user.findUnique({
-        where: { username },
-      });
+      const taken = await this.isUsernameTaken(username, userId);
 
-      if (existing && existing.id !== user.id) {
-        throw new ForbiddenException('Username already taken');
+      if (taken) {
+        throw new ConflictException('Username is already taken');
       }
     }
 
     return this.prisma.user.update({
-      where: { id: user.id },
+      where: { id: userId },
       data: {
-        ...body,
+        ...rest,
+        username,
         dob: body.dob ? new Date(body.dob) : undefined,
       },
       select: {
+        id: true,
         firstName: true,
         lastName: true,
         username: true,
@@ -106,9 +182,37 @@ export class UsersService {
         gender: true,
         dob: true,
         about: true,
+        role: true,
       },
     });
   }
+
+  // Update Address
+async updateAddress(userId: string, body: any) {
+  if (!userId) throw new BadRequestException('User ID is required');
+
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+    select: { addressId: true },
+  });
+
+  if (user?.addressId) {
+    return this.prisma.address.update({
+      where: { id: user.addressId },
+      data: body,
+    });
+  } else {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        address: {
+          create: body,
+        },
+      },
+      include: { address: true },
+    });
+  }
+}
 
   // Debug
   async debugUsers() {
@@ -136,6 +240,61 @@ export class UsersService {
     return found;
   }
 
+  // Get Pastors
+  async getPastors() {
+    return this.prisma.user.findMany({
+      where: {
+        role: {
+          in: [Role.CAMPUS_PASTOR, Role.PASTOR, Role.DISTRICT, Role.TEAM],
+        },
+      },
+    });
+  }
+
+  // Get Leaders
+  async getLeaders() {
+    return this.prisma.user.findMany({
+      where: {
+        role: { in: [Role.HOD, Role.CELL, Role.ZONE] },
+      },
+    });
+  }
+
+  // Get Workers
+  async getWorkers() {
+    return this.prisma.user.findMany({
+      where: {
+        departments: {
+          some: {},
+        },
+      },
+      include: {
+        departments: {
+          select: { name: true },
+        },
+      },
+    });
+  }
+
+  // Get Members
+  async getMembers() {
+    return this.prisma.user.findMany({
+      where: {
+        departments: {
+          none: {},
+        },
+        role: 'MEMBER',
+      },
+    });
+  }
+
+  // Generic
+  async getByRole(role: Role) {
+    return this.prisma.user.findMany({
+      where: { role },
+    });
+  }
+
   // Update Role
   async updateRole(user: any, id: string, role: any, token: string) {
     const allowedRoles = [
@@ -156,18 +315,6 @@ export class UsersService {
       where: { id },
       data: { role },
     });
-
-    // const newAuthRole = allowedRoles.includes(role) ? 'ADMIN' : 'USER';
-
-    // await axios.patch(
-    //   `${process.env.AUTH_SERVICE_URL}/auth/users/${updated.authId}/role`,
-    //   { role: newAuthRole },
-    //   {
-    //     headers: {
-    //       Authorization: token,
-    //     },
-    //   },
-    // );
 
     return updated;
   }

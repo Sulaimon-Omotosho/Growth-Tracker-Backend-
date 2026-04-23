@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  BadRequestException
+} from '@nestjs/common';
+import { isNegative } from 'class-validator';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -13,6 +19,65 @@ export class ChurchService {
     if (!pastor) {
       throw new NotFoundException('Pastor not found');
     }
+  }
+
+  // Check Name Availability
+  async checkTeamName(name: string) {
+    const count = await this.prisma.churchTeam.count({
+      where: {
+        name: { equals: name, mode: 'insensitive' },
+      },
+    });
+    return { available: count === 0 };
+  }
+
+  async checkDeptName(name: string, churchTeamId: string) {
+    const count = await this.prisma.department.count({
+      where: {
+        name: { equals: name, mode: 'insensitive' },
+        churchTeamId: churchTeamId,
+      },
+    });
+    return { available: count === 0 };
+  }
+
+  async checkDistName(name: string) {
+    const count = await this.prisma.district.count({
+      where: {
+        name: { equals: name, mode: 'insensitive' },
+      },
+    });
+    return { available: count === 0 };
+  }
+
+  async checkCommName(name: string, districtId: string) {
+    const count = await this.prisma.community.count({
+      where: {
+        name: { equals: name, mode: 'insensitive' },
+        districtId: districtId,
+      },
+    });
+    return { available: count === 0 };
+  }
+
+  async checkZoneName(name: string, communityId: string) {
+    const count = await this.prisma.zone.count({
+      where: {
+        name: { equals: name, mode: 'insensitive' },
+        communityId: communityId,
+      },
+    });
+    return { available: count === 0 };
+  }
+
+  async checkCellName(name: string, communityId: string) {
+    const count = await this.prisma.cell.count({
+      where: {
+        name: { equals: name, mode: 'insensitive' },
+        communityId: communityId,
+      },
+    });
+    return { available: count === 0 };
   }
 
   // Search Team
@@ -91,10 +156,67 @@ export class ChurchService {
       take: 10,
     });
   }
+  // Search All Zones
+  async searchAllZones(query: string) {
+    return this.prisma.zone.findMany({
+      where: {
+        name: {
+          contains: query,
+          mode: 'insensitive',
+        },
+      },
+      take: 20, // At most 20 as requested
+      include: {
+        community: { select: { name: true } },
+      },
+    });
+  }
+
+  // Search Cell
+  async searchCell(data: {q?: string; communityId: string}) {
+    const { q, communityId} = data
+
+    return this.prisma.cell.findMany({
+      where: {
+        communityId: communityId,
+        name: {
+          contains: q || '',
+          mode: 'insensitive',
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        leader: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      take: 10,
+    });
+  }
 
   // Create Team
   async addTeam(data: any) {
     const { name, leaderId, description } = data;
+
+    const existingTeam = await this.prisma.churchTeam.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    if (existingTeam) {
+      throw new ConflictException(
+        `A team with the name "${name}" already exists.`,
+      );
+    }
 
     await this.validateLeader(leaderId);
 
@@ -107,6 +229,22 @@ export class ChurchService {
   async addDepartment(data: any) {
     const { name, leaderId, churchTeamId, email, description } = data;
 
+    const existingDept = await this.prisma.department.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: 'insensitive',
+        },
+        churchTeamId: churchTeamId,
+      },
+    });
+
+    if (existingDept) {
+      throw new ConflictException(
+        `A department with the name "${name}" already exists in this team.`,
+      );
+    }
+
     await this.validateLeader(leaderId);
 
     return this.prisma.department.create({
@@ -117,6 +255,21 @@ export class ChurchService {
   // Create District
   async addDistrict(data: any) {
     const { name, leaderId } = data;
+
+    const existingName = await this.prisma.district.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    if (existingName) {
+      throw new ConflictException(
+        `A district with the name "${name}" already exists.`,
+      );
+    }
 
     await this.validateLeader(leaderId);
 
@@ -129,6 +282,22 @@ export class ChurchService {
   async addCommunity(data: any) {
     const { name, leaderId, districtId } = data;
 
+    const existingName = await this.prisma.community.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: 'insensitive',
+        },
+        districtId: districtId,
+      },
+    });
+
+    if (existingName) {
+      throw new ConflictException(
+        `A community with the name "${name}" already exists in this district.`,
+      );
+    }
+
     await this.validateLeader(leaderId);
 
     return this.prisma.community.create({
@@ -140,6 +309,22 @@ export class ChurchService {
   async addZone(data: any) {
     const { name, leaderId, communityId } = data;
 
+    const existingName = await this.prisma.zone.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: 'insensitive',
+        },
+        communityId: communityId,
+      },
+    });
+
+    if (existingName) {
+      throw new ConflictException(
+        `A zone with the name "${name}" already exists in this community.`,
+      );
+    }
+
     await this.validateLeader(leaderId);
 
     return this.prisma.zone.create({
@@ -149,13 +334,132 @@ export class ChurchService {
 
   // Create Cell
   async addCell(data: any) {
-    const { name, leaderId, communityId, zoneId } = data;
+    const { name, isOnline, leaderId, communityId, zoneId, address } = data;
+
+    const existingName = await this.prisma.cell.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: 'insensitive',
+        },
+        communityId: communityId,
+      },
+    });
+
+    if (existingName) {
+      throw new ConflictException(
+        `A cell with the name "${name}" already exists in this community.`,
+      );
+    }
 
     await this.validateLeader(leaderId);
 
     return this.prisma.cell.create({
-      data: { name, leaderId, zoneId, communityId },
+      data: {
+              name,
+              isOnline,
+              leader: { connect: { id: leaderId }, },
+              zone: { connect: { id: zoneId }, },
+              community: { connect: { id: communityId },},
+              address: address ? {
+                    create: {
+                      street: address.street,
+                      city: address.city,
+                      state: address.state,
+                      country: address.country,
+                      zipCode: address.zipCode,
+                    },
+                  }
+                : undefined,
+            },
+              include: {  address: true }
+      });
+  }
+
+  //Create A Small Group
+async addSmallGroup(data: any) {
+  const {name, description, leaderId, interests} = data
+  try {
+    return await this.prisma.smallGroup.create({
+      data: {
+        name, description, leaderId,
+        interests: {
+          connectOrCreate: (interests || []).map((interestName) => {
+            const cleanName = interestName.toLowerCase().trim()
+            return {
+              where: { name: cleanName},
+              create: { name: cleanName },
+            }
+          }),
+        },
+      },
+      include: {
+        interests: true,
+        leader: {
+          select: {
+            firstName: true,
+            lastName: true,
+            image: true
+          },
+        },
+      },
+    })
+    
+  } catch (error) {
+    throw new Error('Failed to create small group. Please check your inputs.')
+  }
+}
+
+  // Join Cell
+  async joinCell(userId: string, cellId: string) {
+    const cell = await this.prisma.cell.findUnique({
+      where: { id: cellId },
+      select: { communityId: true, zoneId: true }
     });
+
+    if (!cell) {
+      throw new NotFoundException('The requested Cell does not exist.');
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        cellId: cellId,
+        communityId: cell.communityId,
+        zoneId: cell.zoneId,
+      },
+    });
+  }
+
+  // Join Department
+  async joinDept(userId: string, deptId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {id: userId},
+      include: {
+        _count: {
+          select: {departments: true}
+        }
+      }
+    })
+
+    if (user!._count.departments >= 3) {
+      throw new BadRequestException('You can only join max 3 departments.')
+    }
+    
+    return this.prisma.user.update({
+      where: { id: userId},
+      data: {
+        departments: {
+          // disconnect: {id: deptId},
+          connect: {id: deptId}
+        },
+      },
+      include: {
+        departments: {
+          include: {churchTeam: true}
+        }
+      }
+    })
   }
 
   // Get All Teams
@@ -165,6 +469,142 @@ export class ChurchService {
         leader: {
           select: { id: true, firstName: true, lastName: true, email: true },
         },
+        _count: {
+          select: { departments: true },
+        },
+      },
+    });
+  }
+
+  // Get All Departments
+  async getDepartments(teamId?: string) {
+    return this.prisma.department.findMany({
+      where: teamId ? { churchTeamId: teamId } : {},
+      include: {
+        leader: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        churchTeam: {
+          select: { name: true },
+        },
+        _count: {
+          select: { members: true },
+        },
+      },
+    });
+  }
+
+  // Get Department Members
+  async getDepartmentMembers(deptId?: string) {
+    return this.prisma.department.findUnique({
+      where: { id: deptId },
+      select: {
+        members: true,
+      },
+    });
+  }
+
+  // Get All Districts
+  async getDistricts() {
+    return this.prisma.district.findMany({
+      include: {
+        leader: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        _count: {
+          select: { communities: true },
+        },
+      },
+    });
+  }
+
+  // Get All Communities
+  async getCommunities(districtId?: string) {
+    return this.prisma.community.findMany({
+      where: districtId ? { districtId: districtId } : {},
+      include: {
+        leader: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        district: {
+          select: { name: true },
+        },
+        _count: {
+          select: { users: true, cells: true },
+        },
+      },
+    });
+  }
+
+  // Get All Zones
+  async getZones(communityId?: string) {
+    return this.prisma.zone.findMany({
+      where: communityId ? { communityId: communityId } : {},
+      include: {
+        leader: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        community: {
+          select: { name: true },
+        },
+        _count: {
+          select: { users: true },
+        },
+      },
+    });
+  }
+
+  // Get All Cells
+  async getCells(communityId?: string) {
+    return this.prisma.cell.findMany({
+      where: communityId ? { communityId: communityId } : {},
+      include: {
+        address: true,
+        leader: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        community: {
+          select: { name: true },
+        },
+        zone: {
+          select: { name: true },
+        },
+        _count: {
+          select: { users: true },
+        },
+      },
+    });
+  }
+
+  // Get All Cells by Zones
+  async getCellsByZone(zoneId: string) {
+    return this.prisma.cell.findMany({
+      where: { zoneId },
+      include: {
+        address: true,
+        leader: {
+          select: { firstName: true, lastName: true }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+  }
+
+  // Get Cell Members
+  async getCellMembers(cellId?: string) {
+    return this.prisma.cell.findUnique({
+      where: { id: cellId },
+      select: {
+        users: true,
+      },
+    });
+  }
+
+  // Delete Teams
+  async deleteTeams(ids: string[]) {
+    return this.prisma.churchTeam.deleteMany({
+      where: {
+        id: { in: ids },
       },
     });
   }

@@ -1,9 +1,62 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+  Req
+} from '@nestjs/common';
 import { ChurchService } from './church.service';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('church')
 export class ChurchController {
   constructor(private readonly churchService: ChurchService) {}
+
+  @Get('teams/check-team-name')
+  async checkTeam(@Query('name') name: string) {
+    return this.churchService.checkTeamName(name);
+  }
+
+  @Get('teams/check-dept-name')
+  async checkDept(
+    @Query('name') name: string,
+    @Query('churchTeamId') churchTeamId: string,
+  ) {
+    return this.churchService.checkDeptName(name, churchTeamId);
+  }
+
+  @Get('teams/check-dist-name')
+  async checkDist(@Query('name') name: string) {
+    return this.churchService.checkDistName(name);
+  }
+
+  @Get('teams/check-comm-name')
+  async checkComm(
+    @Query('name') name: string,
+    @Query('districtId') districtId: string,
+  ) {
+    return this.churchService.checkCommName(name, districtId);
+  }
+
+  @Get('teams/check-zone-name')
+  async checkZone(
+    @Query('name') name: string,
+    @Query('communityId') communityId: string,
+  ) {
+    return this.churchService.checkZoneName(name, communityId);
+  }
+
+  @Get('teams/check-cell-name')
+  async checkCell(
+    @Query('name') name: string,
+    @Query('communityId') communityId: string,
+  ) {
+    return this.churchService.checkCellName(name, communityId);
+  }
 
   @Get('search/team')
   searchTeam(@Query('q') q: string) {
@@ -25,38 +78,122 @@ export class ChurchController {
     return this.churchService.searchZone({ q, communityId });
   }
 
-  @Post('team')
+  @Get('search/all/zones')
+  async searchAllZones(@Query('q') query: string) {
+    return this.churchService.searchAllZones(query);
+  }
+
+  @Get('zones/:zoneId/cells')
+  async getCellsByZone(@Param('zoneId') zoneId: string) {
+    return this.churchService.getCellsByZone(zoneId);
+  }
+
+  @Get('search/cell')
+  searchCell(
+    @Query('q') q: string, 
+    @Query('communityId') communityId: string
+  ) {
+    return this.churchService.searchCell({ q, communityId });
+  }
+
+  @Post('add/team')
   addTeam(@Body() body: any) {
     return this.churchService.addTeam(body);
   }
 
-  @Post('department')
+  @Post('add/department')
   addDepartment(@Body() body: any) {
     return this.churchService.addDepartment(body);
   }
 
-  @Post('district')
+  @Post('add/district')
   addDistrict(@Body() body: any) {
     return this.churchService.addDistrict(body);
   }
 
-  @Post('community')
+  @Post('add/community')
   addCommunity(@Body() body: any) {
     return this.churchService.addCommunity(body);
   }
 
-  @Post('zone')
+  @Post('add/zone')
   addZone(@Body() body: any) {
     return this.churchService.addZone(body);
   }
 
-  @Post('cell')
+  @Post('add/cell')
   addCell(@Body() body: any) {
     return this.churchService.addCell(body);
   }
 
-  @Get('allTeams')
+  @Post('add/small-group')
+  addSmallGroup(@Body() body: any) {
+    return this.churchService.addSmallGroup(body);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('members/join/cell')
+  async joinCell(@Body('cellId') cellId: string, @Req() req: any) {
+    return this.churchService.joinCell(req.user.id, cellId);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('members/join/dept')
+  async joinDept(@Body('deptId') deptId: string, @Req() req: any) {
+    return this.churchService.joinDept(req.user.id, deptId);
+  }
+
+  @Get('get/teams')
+  @UseGuards(AuthGuard('jwt'))
   getTeams() {
     return this.churchService.getTeams();
+  }
+
+  @Get('get/departments')
+  @UseGuards(AuthGuard('jwt'))
+  getDepartments(@Query('teamId') teamId?: string) {
+    return this.churchService.getDepartments(teamId);
+  }
+
+  @Get('get/departments/:id/members')
+  @UseGuards(AuthGuard('jwt'))
+  getDeptMembers(@Param('id') id?: string) {
+    return this.churchService.getDepartmentMembers(id);
+  }
+
+  @Get('get/districts')
+  @UseGuards(AuthGuard('jwt'))
+  getDistricts() {
+    return this.churchService.getDistricts();
+  }
+
+  @Get('get/communities')
+  @UseGuards(AuthGuard('jwt'))
+  getCommunities(@Query('districtId') districtId?: string) {
+    return this.churchService.getCommunities(districtId);
+  }
+
+  @Get('get/zones')
+  @UseGuards(AuthGuard('jwt'))
+  getZones(@Query('communityId') communityId?: string) {
+    return this.churchService.getZones(communityId);
+  }
+
+  @Get('get/cells')
+  @UseGuards(AuthGuard('jwt'))
+  getCells(@Query('communityId') communityId?: string) {
+    return this.churchService.getCells(communityId);
+  }
+
+  @Get('get/cells/:id/members')
+  @UseGuards(AuthGuard('jwt'))
+  getCellsMembers(@Param('id') id?: string) {
+    return this.churchService.getCellMembers(id);
+  }
+
+  @Delete('teams/bulk-delete')
+  @UseGuards(AuthGuard('jwt'))
+  async deleteTeams(@Body('ids') ids: string[]) {
+    return this.churchService.deleteTeams(ids);
   }
 }

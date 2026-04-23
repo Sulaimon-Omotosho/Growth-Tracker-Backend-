@@ -8,18 +8,29 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors({
-    origin: (origin: any, callback: any) => {
-      const allowedOrigins = [process.env.CLIENT_URL, process.env.ADMIN_URL];
+  // app.enableCors({
+  //   origin: (origin: any, callback: any) => {
+  //     const allowedOrigins = [
+  //       process.env.CLIENT_URL,
+  //       process.env.ADMIN_URL,
+  //       process.env.TEST_URL,
+  //     ];
 
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: 'GET,POST,PATCH,DELETE',
+  //     if (!origin || allowedOrigins.includes(origin)) {
+  //       callback(null, true);
+  //     } else {
+  //       callback(new Error('Not allowed by CORS'));
+  //     }
+  //   },
+  //   methods: 'GET,POST,PATCH,DELETE',
+  //   credentials: true,
+  // });
+
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
   });
 
   app.use(cookieParser());
@@ -31,6 +42,6 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(process.env.PORT ?? 8000);
+  await app.listen(process.env.PORT ? 8000 : 8000);
 }
 bootstrap();

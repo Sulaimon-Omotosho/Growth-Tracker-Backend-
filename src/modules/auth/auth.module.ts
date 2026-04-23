@@ -5,8 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RolesModule } from './gaurds/roles/roles.module';
-import { RolesModule } from './guards/roles/roles.module';
+import { RefreshStrategy } from './strategies/refresh.strategy';
 
 @Module({
   imports: [
@@ -21,9 +20,8 @@ import { RolesModule } from './guards/roles/roles.module';
         },
       }),
     }),
-    RolesModule,
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, RefreshStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })

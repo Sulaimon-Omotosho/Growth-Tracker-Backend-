@@ -7,6 +7,9 @@ import { ChurchModule } from './modules/church/church.module';
 import { UsersModule } from './modules/users/users.module';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './modules/auth/guards/roles/roles.guard';
+import { MessagesModule } from './messages/messages.module';
+import { MessagesModule } from './modules/messages/messages.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -18,6 +21,8 @@ import { RolesGuard } from './modules/auth/guards/roles/roles.guard';
     AuthModule,
     ChurchModule,
     UsersModule,
+    MessagesModule,
+    NotificationsModule,
   ],
   controllers: [HealthController],
   providers: [

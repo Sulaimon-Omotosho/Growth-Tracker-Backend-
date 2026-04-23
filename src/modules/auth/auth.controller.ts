@@ -8,6 +8,7 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { Request, Response } from 'express';
@@ -19,6 +20,8 @@ import {
   RegisterDto,
   UpdateRoleDto,
 } from './dto/auth.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from './guards/roles/roles.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -68,7 +71,8 @@ export class AuthController {
 
   @Post('google')
   async google(
-    @Body('token') googleDto: GoogleDto,
+    // @Body('token') googleDto: GoogleDto,
+    @Body() googleDto: GoogleDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     const data = await this.auth.googleAuth(googleDto.token);
@@ -76,36 +80,39 @@ export class AuthController {
     return { user: data.user };
   }
 
+  // REFRESH
+  @UseGuards(AuthGuard('jwt-refresh'))
   @Post('refresh')
-  async refresh(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) throw new UnauthorizedException('No Refresh Token');
+  async refresh(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+    const user = req.user;
+    const tokens = await this.auth.refreshTokens(user.id, user.refreshToken);
 
-    const data = await this.auth.refresh(refreshToken);
-    res.cookie('accessToken', data.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 1 * 60 * 60 * 1000,
-    });
+    this.setAuthCookies(res, tokens);
 
     return { success: true };
   }
 
   @Post('logout')
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+    };
+
+    res.clearCookie('accessToken', cookieOptions);
+    res.clearCookie('refreshToken', cookieOptions);
     return { message: 'Logged out' };
   }
 
   @Patch('users/:id/role')
-  @Roles(Role.CAMPUS_PASTOR, Role.PASTOR)
-  updateRole(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
-    return this.auth.updateRole(id, updateRoleDto.role);
+  @UseGuards(AuthGuard('jwt'))
+  updateRole(
+    @Param('id') targetId: string,
+    @Body() updateRoleDto: UpdateRoleDto,
+    @Req() req: any,
+  ) {
+    return this.auth.updateRole(req.user.id, targetId, updateRoleDto.role);
   }
 
   @Get('health')
