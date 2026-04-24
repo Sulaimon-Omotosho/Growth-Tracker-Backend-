@@ -50,7 +50,7 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwt.signAsync(payload, {
         secret: process.env.JWT_SECRET,
-        expiresIn: '1h',
+        expiresIn: '75m',
       }),
       this.jwt.signAsync(
         { sub: user.id },
@@ -192,13 +192,6 @@ export class AuthService {
     }
   }
 
-  // ROLE UPDATE
-  // async updateRole(userId: string, role: any) {
-  //   return this.prisma.user.update({
-  //     where: { id: userId },
-  //     data: { role },
-  //   });
-  // }
   async updateRole(adminId: string, targetId: string, newRole: Role) {
     const requester = await this.prisma.user.findUnique({
       where: { id: adminId },

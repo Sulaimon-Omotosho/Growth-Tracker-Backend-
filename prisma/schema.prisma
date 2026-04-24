@@ -394,6 +394,7 @@ enum Role {
   TEAM
   HOD
   DISTRICT
+  COMMUNITY
   ZONE
   CELL
   MEMBER

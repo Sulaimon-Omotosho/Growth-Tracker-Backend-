@@ -7,9 +7,9 @@ import { ChurchModule } from './modules/church/church.module';
 import { UsersModule } from './modules/users/users.module';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './modules/auth/guards/roles/roles.guard';
-import { MessagesModule } from './messages/messages.module';
 import { MessagesModule } from './modules/messages/messages.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { EventsModule } from './modules/events/events.module';
 
 @Module({
   imports: [
@@ -23,6 +23,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     UsersModule,
     MessagesModule,
     NotificationsModule,
+    EventsModule,
   ],
   controllers: [HealthController],
   providers: [
