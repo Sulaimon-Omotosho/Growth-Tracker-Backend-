@@ -27,21 +27,45 @@ import { RolesGuard } from './guards/roles/roles.guard';
 export class AuthController {
   constructor(private auth: AuthService) {}
 
+  // private setAuthCookies(
+  //   res: Response,
+  //   tokens: { accessToken: string; refreshToken: string },
+  // ) {
+  //   res.cookie('accessToken', tokens.accessToken, {
+  //     httpOnly: true,
+  //     secure: process.env.NODE_ENV === 'production',
+  //     sameSite: 'lax',
+  //     maxAge: 1000 * 60 * 60,
+  //   });
+
+  //   res.cookie('refreshToken', tokens.refreshToken, {
+  //     httpOnly: true,
+  //     secure: process.env.NODE_ENV === 'production',
+  //     sameSite: 'lax',
+  //     maxAge: 1000 * 60 * 60 * 24 * 3,
+  //   });
+  // }
+
   private setAuthCookies(
     res: Response,
     tokens: { accessToken: string; refreshToken: string },
   ) {
-    res.cookie('accessToken', tokens.accessToken, {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    const cookieOptions: any = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60,
+      sameSite: isProduction ? 'none' : 'lax',
+      secure: isProduction ? true : false,
+      path: '/',
+    };
+
+    res.cookie('accessToken', tokens.accessToken, {
+      ...cookieOptions,
+      maxAge: 1000 * 60 * 75,
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      ...cookieOptions,
       maxAge: 1000 * 60 * 60 * 24 * 3,
     });
   }
