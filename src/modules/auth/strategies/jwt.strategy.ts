@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Request } from 'express';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -17,6 +18,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       },
       ignoreExpiration: false,
       secretOrKey: process.env.JWT_SECRET!,
+      // secretOrKey: ConfigService.get<string>('JWT_SECRET'),
     });
   }
 

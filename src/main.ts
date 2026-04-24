@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-// import * as cookieParser from 'cookie-parser';
 import cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
 
@@ -28,13 +27,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // app.enableCors({
-  //   origin: true,
-  //   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  //   credentials: true,
-  //   allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
-  // });
-
   app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
@@ -44,7 +36,6 @@ async function bootstrap() {
     }),
   );
 
-  // await app.listen(process.env.PORT ? 8000 : 8000);
   await app.listen(process.env.PORT || 8000, '0.0.0.0');
 }
 bootstrap();
