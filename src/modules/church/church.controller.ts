@@ -7,12 +7,15 @@ import {
   Post,
   Query,
   UseGuards,
-  Req
+  Req,
+  Request,
 } from '@nestjs/common';
 import { ChurchService } from './church.service';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from '../auth/guards/jwt/jwt.guard';
 
 @Controller('church')
+@UseGuards(JwtAuthGuard)
 export class ChurchController {
   constructor(private readonly churchService: ChurchService) {}
 
@@ -89,11 +92,13 @@ export class ChurchController {
   }
 
   @Get('search/cell')
-  searchCell(
-    @Query('q') q: string, 
-    @Query('communityId') communityId: string
-  ) {
+  searchCell(@Query('q') q: string, @Query('communityId') communityId: string) {
     return this.churchService.searchCell({ q, communityId });
+  }
+
+  @Get('search/small-groups')
+  async searchSmallGroup(@Query('q') query: string) {
+    return this.churchService.searchGroups(query);
   }
 
   @Post('add/team')
@@ -135,6 +140,11 @@ export class ChurchController {
   @Post('members/join/cell')
   async joinCell(@Body('cellId') cellId: string, @Req() req: any) {
     return this.churchService.joinCell(req.user.id, cellId);
+  }
+
+  @Post('members/join/small-group')
+  async joinSmallGroup(@Body() body: { smallGroupId: string }, @Request() req) {
+    return this.churchService.joinSmallGroup(body.smallGroupId, req.user.id);
   }
 
   @UseGuards(AuthGuard('jwt'))

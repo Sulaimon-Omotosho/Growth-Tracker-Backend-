@@ -2,7 +2,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-  BadRequestException
+  BadRequestException,
 } from '@nestjs/common';
 import { isNegative } from 'class-validator';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -173,8 +173,8 @@ export class ChurchService {
   }
 
   // Search Cell
-  async searchCell(data: {q?: string; communityId: string}) {
-    const { q, communityId} = data
+  async searchCell(data: { q?: string; communityId: string }) {
+    const { q, communityId } = data;
 
     return this.prisma.cell.findMany({
       where: {
@@ -196,6 +196,54 @@ export class ChurchService {
         },
       },
       take: 10,
+    });
+  }
+
+  // Search Small Group
+  async searchGroups(query: string) {
+    if (!query) return [];
+
+    return this.prisma.smallGroup.findMany({
+      where: {
+        OR: [
+          {
+            name: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+          {
+            description: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+          {
+            interests: {
+              some: {
+                name: {
+                  contains: query,
+                  mode: 'insensitive',
+                },
+              },
+            },
+          },
+        ],
+      },
+      take: 10,
+      include: {
+        interests: {
+          select: {
+            name: true,
+          },
+        },
+        leader: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
     });
   }
 
@@ -356,65 +404,69 @@ export class ChurchService {
 
     return this.prisma.cell.create({
       data: {
-              name,
-              isOnline,
-              leader: { connect: { id: leaderId }, },
-              zone: { connect: { id: zoneId }, },
-              community: { connect: { id: communityId },},
-              address: address ? {
-                    create: {
-                      street: address.street,
-                      city: address.city,
-                      state: address.state,
-                      country: address.country,
-                      zipCode: address.zipCode,
-                    },
-                  }
-                : undefined,
-            },
-              include: {  address: true }
-      });
+        name,
+        isOnline,
+        leader: { connect: { id: leaderId } },
+        zone: { connect: { id: zoneId } },
+        community: { connect: { id: communityId } },
+        address: address
+          ? {
+              create: {
+                street: address.street,
+                city: address.city,
+                state: address.state,
+                country: address.country,
+                zipCode: address.zipCode,
+              },
+            }
+          : undefined,
+      },
+      include: { address: true },
+    });
   }
 
   //Create A Small Group
-async addSmallGroup(data: any) {
-  const {name, description, leaderId, interests} = data
-  try {
-    return await this.prisma.smallGroup.create({
-      data: {
-        name, description, leaderId,
-        interests: {
-          connectOrCreate: (interests || []).map((interestName) => {
-            const cleanName = interestName.toLowerCase().trim()
-            return {
-              where: { name: cleanName},
-              create: { name: cleanName },
-            }
-          }),
-        },
-      },
-      include: {
-        interests: true,
-        leader: {
-          select: {
-            firstName: true,
-            lastName: true,
-            image: true
+  async addSmallGroup(data: any) {
+    const { name, description, leaderId, interests } = data;
+    try {
+      return await this.prisma.smallGroup.create({
+        data: {
+          name,
+          description,
+          leaderId,
+          interests: {
+            connectOrCreate: (interests || []).map((interestName) => {
+              const cleanName = interestName.toLowerCase().trim();
+              return {
+                where: { name: cleanName },
+                create: { name: cleanName },
+              };
+            }),
           },
         },
-      },
-    })
-    
-  } catch (error) {
-    throw new Error('Failed to create small group. Please check your inputs.')
+        include: {
+          interests: true,
+          leader: {
+            select: {
+              firstName: true,
+              lastName: true,
+              image: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      throw new Error(
+        'Failed to create small group. Please check your inputs.',
+      );
+    }
   }
-}
 
   // Join Cell
   async joinCell(userId: string, cellId: string) {
     const cell = await this.prisma.cell.findUnique({
       where: { id: cellId },
-      select: { communityId: true, zoneId: true }
+      select: { communityId: true, zoneId: true },
     });
 
     if (!cell) {
@@ -431,35 +483,51 @@ async addSmallGroup(data: any) {
     });
   }
 
+  // Join Small Group
+  async joinSmallGroup(smallGroupId: string, userId: string) {
+    try {
+      return await this.prisma.smallGroup.update({
+        where: { id: smallGroupId },
+        data: {
+          members: {
+            connect: { id: userId },
+          },
+        },
+      });
+    } catch (error) {
+      throw new NotFoundException('The specified small group was not found.');
+    }
+  }
+
   // Join Department
   async joinDept(userId: string, deptId: string) {
     const user = await this.prisma.user.findUnique({
-      where: {id: userId},
+      where: { id: userId },
       include: {
         _count: {
-          select: {departments: true}
-        }
-      }
-    })
+          select: { departments: true },
+        },
+      },
+    });
 
     if (user!._count.departments >= 3) {
-      throw new BadRequestException('You can only join max 3 departments.')
+      throw new BadRequestException('You can only join max 3 departments.');
     }
-    
+
     return this.prisma.user.update({
-      where: { id: userId},
+      where: { id: userId },
       data: {
         departments: {
           // disconnect: {id: deptId},
-          connect: {id: deptId}
+          connect: { id: deptId },
         },
       },
       include: {
         departments: {
-          include: {churchTeam: true}
-        }
-      }
-    })
+          include: { churchTeam: true },
+        },
+      },
+    });
   }
 
   // Get All Teams
@@ -583,10 +651,10 @@ async addSmallGroup(data: any) {
       include: {
         address: true,
         leader: {
-          select: { firstName: true, lastName: true }
-        }
+          select: { firstName: true, lastName: true },
+        },
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
   }
 
