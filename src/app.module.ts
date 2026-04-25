@@ -10,6 +10,7 @@ import { RolesGuard } from './modules/auth/guards/roles/roles.guard';
 import { MessagesModule } from './modules/messages/messages.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { EventsModule } from './modules/events/events.module';
+import { ManagementModule } from './modules/management/management.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { EventsModule } from './modules/events/events.module';
     MessagesModule,
     NotificationsModule,
     EventsModule,
+    ManagementModule,
   ],
   controllers: [HealthController],
   providers: [
