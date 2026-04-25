@@ -7,12 +7,16 @@ import {
   Param,
   Delete,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
-import { CreateEventDto } from './dto/create-event.dto';
+import { CreateAnnouncementDto, CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt/jwt.guard';
 
 @Controller('events')
+@UseGuards(JwtAuthGuard)
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
@@ -35,6 +39,23 @@ export class EventsController {
   @Get('upcoming')
   async getUpcoming() {
     return this.eventsService.getUpcomingEvents();
+  }
+
+  // ANNOUNCEMENT
+  @Post('leadership/announcement')
+  leaderAnnouncement(
+    @Req() requestAnimationFrame,
+    @Body() dto: CreateAnnouncementDto,
+  ) {
+    return this.eventsService.createAnnouncement(
+      requestAnimationFrame.user.id,
+      dto,
+    );
+  }
+
+  @Get('my-announcements')
+  getMyAnnouncements(@Req() req) {
+    return this.eventsService.getAnnouncement(req.user.id);
   }
 
   @Get(':id')

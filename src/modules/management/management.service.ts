@@ -11,6 +11,8 @@ export class ManagementService {
     return this.prisma.user.findUnique({
       where: { id: userId },
       select: {
+        firstName: true,
+        lastName: true,
         leadsCell: { select: { id: true, name: true } },
         leadsSmallGroup: { select: { id: true, name: true } },
         leadsCommunity: { select: { id: true, name: true } },
