@@ -562,6 +562,42 @@ export class ChurchService {
     });
   }
 
+  // Get My Departments
+  async getUserDepartments(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        departments: {
+          include: {
+            leader: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                username: true,
+                image: true,
+              },
+            },
+            _count: {
+              select: { members: true },
+            },
+          },
+        },
+        _count: {
+          select: {
+            departments: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user.departments;
+  }
+
   // Get Department Members
   async getDepartmentMembers(deptId?: string) {
     return this.prisma.department.findUnique({

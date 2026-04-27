@@ -165,6 +165,11 @@ export class ChurchController {
     return this.churchService.getDepartments(teamId);
   }
 
+  @Get('my-departments')
+  async getMyDepartments(@Req() req: any) {
+    return this.churchService.getUserDepartments(req.user.id);
+  }
+
   @Get('get/departments/:id/members')
   @UseGuards(AuthGuard('jwt'))
   getDeptMembers(@Param('id') id?: string) {
