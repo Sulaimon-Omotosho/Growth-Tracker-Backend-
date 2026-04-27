@@ -165,7 +165,7 @@ export class ChurchController {
     return this.churchService.getDepartments(teamId);
   }
 
-  @Get('my-departments')
+  @Get('get/my-departments')
   async getMyDepartments(@Req() req: any) {
     return this.churchService.getUserDepartments(req.user.id);
   }
@@ -208,6 +208,11 @@ export class ChurchController {
   @UseGuards(AuthGuard('jwt'))
   getCellsMembers(@Param('id') id?: string) {
     return this.churchService.getCellMembers(id);
+  }
+
+  @Get('get/my-groups')
+  async getMyGroups(@Req() req: any) {
+    return this.churchService.getUserSmallGroups(req.user.id);
   }
 
   @Delete('teams/bulk-delete')

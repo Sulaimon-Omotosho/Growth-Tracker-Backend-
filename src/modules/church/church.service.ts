@@ -756,6 +756,35 @@ export class ChurchService {
     });
   }
 
+  // Get My Small Groups
+  async getUserSmallGroups(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        smallGroups: {
+          include: {
+            leader: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                username: true,
+                image: true,
+              },
+            },
+            _count: {
+              select: { members: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return user.smallGroups;
+  }
+
   // Delete Teams
   async deleteTeams(ids: string[]) {
     return this.prisma.churchTeam.deleteMany({
