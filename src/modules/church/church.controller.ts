@@ -190,9 +190,13 @@ export class ChurchController {
   }
 
   @Get('get/cells')
-  @UseGuards(AuthGuard('jwt'))
   getCells(@Query('communityId') communityId?: string) {
     return this.churchService.getCells(communityId);
+  }
+
+  @Get('get/my-cell')
+  async getMyCell(@Req() req: any) {
+    return this.churchService.getUserCell(req.user.sub);
   }
 
   @Get('get/cells/:id/members')

@@ -658,6 +658,58 @@ export class ChurchService {
     });
   }
 
+  // Get My Cell Data
+  async getUserCell(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        cell: {
+          include: {
+            address: true,
+            leader: {
+              select: {
+                firstName: true,
+                lastName: true,
+                phone: true,
+                email: true,
+                image: true,
+              },
+            },
+            community: {
+              include: {
+                district: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            zone: {
+              select: {
+                name: true,
+              },
+            },
+            users: {
+              select: {
+                id: true,
+                username: true,
+                image: true,
+              },
+            },
+            _count: { select: { users: true } },
+          },
+        },
+      },
+    });
+
+    if (!user?.cell) {
+      throw new NotFoundException('You are not currently assigned to a cell');
+    }
+
+    return user.cell;
+  }
+
   // Get Cell Members
   async getCellMembers(cellId?: string) {
     return this.prisma.cell.findUnique({
