@@ -54,7 +54,7 @@ export class EventsController {
   }
 
   @Get('my-announcements')
-  getMyAnnouncements(@Req() req) {
+  getMyAnnouncements(@Req() req: any) {
     return this.eventsService.getAnnouncement(req.user.id);
   }
 

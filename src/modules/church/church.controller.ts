@@ -196,7 +196,7 @@ export class ChurchController {
 
   @Get('get/my-cell')
   async getMyCell(@Req() req: any) {
-    return this.churchService.getUserCell(req.user.sub);
+    return this.churchService.getUserCell(req.user.id);
   }
 
   @Get('get/cells/:id/members')
