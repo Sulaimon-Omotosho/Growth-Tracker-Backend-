@@ -59,6 +59,12 @@ model User {
   notificationsTriggered Notification[]      @relation("NotificationSender")
 
   authoredAnnouncements  Announcement[]      @relation("AuthorAnnouncements")
+
+  // Courses
+  classAttendance  SessionAttendance[]
+  courseEnrollment CourseEnrollment[]
+  
+
 }
 
 model Address {
@@ -414,4 +420,85 @@ enum CourseStatus {
   NOT_STARTED
   IN_PROGRESS
   COMPLETED
+  DROPPED
+}
+
+model Course {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  thumbnail     String?
+  isActive      Boolean   @default(true)
+  
+  // Improvement: Quick stats for the UI
+  totalSessions Int       @default(0) 
+  category      String?   // e.g., "Foundation", "Leadership", "Discipleship"
+  
+  // Improvement: Course Locking
+  prerequisiteId String?
+  prerequisite   Course?  @relation("CoursePrerequisites", fields: [prerequisiteId], references: [id])
+  nextCourses    Course[] @relation("CoursePrerequisites")
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      CourseSession[]
+  enrollments   CourseEnrollment[]
+}
+
+model CourseSession {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  description String?
+  order       Int      
+  maxGrade    Int      @default(100)
+  passGrade   Int      @default(50) 
+  videoUrl    String?
+  pdfUrl      String?
+
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  attendance  SessionAttendance[]
+}
+
+model CourseEnrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  courseId    String
+  status      CourseStatus @default(NOT_STARTED)
+  
+  progress    Int       @default(0) 
+  
+  finalGrade  Float?    
+
+  startDate   DateTime  @default(now())
+  completedAt DateTime?
+
+  user        User      @relation(fields: [userId], references: [id])
+  course      Course    @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model SessionAttendance {
+  id          String   @id @default(cuid())
+  sessionId   String
+  userId      String
+  attendedAt  DateTime @default(now())
+  
+  mode        AttendanceMode @default(PHYSICAL) 
+  
+  grade       Int?     
+  isPassed    Boolean  @default(false)
+  feedback    String?
+
+  session     CourseSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, sessionId])
+}
+
+enum AttendanceMode {
+  PHYSICAL
+  ONLINE
 }
