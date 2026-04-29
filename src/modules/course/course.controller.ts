@@ -51,6 +51,16 @@ export class CourseController {
     return this.courseService.markAttendance(userId, sessionId, grade);
   }
 
+  @Get('available')
+  async getAvailable(@Req() req: any) {
+    return this.courseService.getAvailableCourses(req.user.id);
+  }
+
+  @Get('my-enrollments')
+  async getMyEnrollments(@Req() req: any) {
+    return this.courseService.getMyEnrollments(req.user.id);
+  }
+
   @Get(':id')
   async getMyCourse(@Param('id') courseId: string, @Req() req: any) {
     return this.courseService.getCourseForStudent(courseId, req.user.id);

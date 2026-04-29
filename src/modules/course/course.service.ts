@@ -212,6 +212,32 @@ export class CourseService {
     });
   }
 
+  async getAvailableCourses(userId: string) {
+    return this.prisma.course.findMany({
+      where: {
+        isActive: true,
+        enrollments: {
+          none: { userId },
+        },
+      },
+      include: {
+        _count: { select: { sessions: true } },
+      },
+    });
+  }
+
+  async getMyEnrollments(userId: string) {
+    return this.prisma.courseEnrollment.findMany({
+      where: { userId },
+      include: {
+        course: {
+          include: { _count: { select: { sessions: true } } },
+        },
+      },
+      orderBy: { startDate: 'desc' },
+    });
+  }
+
   // Start a Course
   // async courseEnrollUser(userId: string, courseId: string) {
   //   const course = await this.prisma.course.findUnique({
