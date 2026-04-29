@@ -71,6 +71,12 @@ export class CourseController {
     return this.courseService.enrollUser(req.user.id, courseId);
   }
 
+  @Get(':id/progress')
+  async getCourseProgress(@Param('id') courseId: string, @Req() req: any) {
+    const userId = req.user.id;
+    return this.courseService.getCourseForStudent(courseId, userId);
+  }
+
   @Post('mark')
   @HttpCode(HttpStatus.OK)
   async markStudentAttendance(
