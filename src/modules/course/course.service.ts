@@ -135,52 +135,52 @@ export class CourseService {
   /**
    * CLIENT: Get course with student-specific progress
    */
-  // async getCourseForStudent(courseId: string, userId: string) {
-  //   const course = await this.prisma.course.findUnique({
-  //     where: { id: courseId },
-  //     include: {
-  //       sessions: { orderBy: { order: 'asc' } },
-  //       enrollments: { where: { userId } },
-  //     },
-  //   });
+  async getCourseForStudent(courseId: string, userId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        sessions: { orderBy: { order: 'asc' } },
+        enrollments: { where: { userId } },
+      },
+    });
 
-  //   if (!course) throw new NotFoundException('Course not found');
+    if (!course) throw new NotFoundException('Course not found');
 
-  //   // Fetch attendance for this user for all sessions in this course
-  //   const attendance = await this.prisma.sessionAttendance.findMany({
-  //     where: {
-  //       userId,
-  //       session: { courseId },
-  //     },
-  //   });
+    // Fetch attendance for this user for all sessions in this course
+    const attendance = await this.prisma.sessionAttendance.findMany({
+      where: {
+        userId,
+        session: { courseId },
+      },
+    });
 
-  //   // Merge sessions with attendance status
-  //   const curriculum = course.sessions.map((session) => {
-  //     const record = attendance.find((a) => a.sessionId === session.id);
-  //     return {
-  //       ...session,
-  //       isCompleted: record?.isPassed || false,
-  //       grade: record?.grade || null,
-  //       attendedAt: record?.attendedAt || null,
-  //     };
-  //   });
+    // Merge sessions with attendance status
+    const curriculum = course.sessions.map((session) => {
+      const record = attendance.find((a) => a.sessionId === session.id);
+      return {
+        ...session,
+        isCompleted: record?.isPassed || false,
+        grade: record?.grade || null,
+        attendedAt: record?.attendedAt || null,
+      };
+    });
 
-  //   const completedCount = curriculum.filter((s) => s.isCompleted).length;
-  //   const progress =
-  //     course.sessions.length > 0
-  //       ? Math.round((completedCount / course.sessions.length) * 100)
-  //       : 0;
+    const completedCount = curriculum.filter((s) => s.isCompleted).length;
+    const progress =
+      course.sessions.length > 0
+        ? Math.round((completedCount / course.sessions.length) * 100)
+        : 0;
 
-  //   return {
-  //     ...course,
-  //     sessions: curriculum,
-  //     stats: {
-  //       progress,
-  //       completedCount,
-  //       totalSessions: course.sessions.length,
-  //     },
-  //   };
-  // }
+    return {
+      ...course,
+      sessions: curriculum,
+      stats: {
+        progress,
+        completedCount,
+        totalSessions: course.sessions.length,
+      },
+    };
+  }
 
   /**
    * CLIENT: Enroll user
