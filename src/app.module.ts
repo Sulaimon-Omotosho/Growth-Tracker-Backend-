@@ -11,6 +11,7 @@ import { MessagesModule } from './modules/messages/messages.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { EventsModule } from './modules/events/events.module';
 import { ManagementModule } from './modules/management/management.module';
+import { CourseModule } from './modules/course/course.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ManagementModule } from './modules/management/management.module';
     NotificationsModule,
     EventsModule,
     ManagementModule,
+    CourseModule,
   ],
   controllers: [HealthController],
   providers: [

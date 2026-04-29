@@ -9,6 +9,8 @@ import {
   UseGuards,
   Req,
   Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ChurchService } from './church.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -136,12 +138,6 @@ export class ChurchController {
     return this.churchService.addSmallGroup(body);
   }
 
-  @Post('add/course')
-  // @Roles('ADMIN', 'PASTOR')
-  async createCourse(@Body() createCourseDto: any) {
-    return this.churchService.createCourseWithSessions(createCourseDto);
-  }
-
   @UseGuards(AuthGuard('jwt'))
   @Post('members/join/cell')
   async joinCell(@Body('cellId') cellId: string, @Req() req: any) {
@@ -219,16 +215,6 @@ export class ChurchController {
   @Get('get/my-groups')
   async getMyGroups(@Req() req: any) {
     return this.churchService.getUserSmallGroups(req.user.id);
-  }
-
-  @Get('courses/all')
-  async getAllCourses() {
-    return this.churchService.getAllCourses();
-  }
-
-  @Get('courses/:id')
-  async getCourse(@Param('id') id: string) {
-    return this.churchService.getUniqueCourse(id);
   }
 
   @Delete('teams/bulk-delete')

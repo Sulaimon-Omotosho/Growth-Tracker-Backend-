@@ -462,43 +462,6 @@ export class ChurchService {
     }
   }
 
-  // Create A Course
-  async createCourseWithSessions(dto: any) {
-    const { title, description, category, sessions } = dto;
-
-    if (!sessions || sessions.length === 0) {
-      throw new BadRequestException('A course must have at least one session.');
-    }
-
-    try {
-      return await this.prisma.course.create({
-        data: {
-          title,
-          description,
-          category,
-          totalSessions: sessions.length,
-          sessions: {
-            create: sessions.map((session: any, index: number) => ({
-              title: session.title,
-              description: session.description || '',
-              order: index + 1,
-              maxGrade: session.maxGrade || 100,
-              passGrade: session.passGrade || 50,
-            })),
-          },
-        },
-        include: {
-          sessions: true,
-        },
-      });
-    } catch (error) {
-      console.error('Course Creation Error:', error);
-      throw new BadRequestException(
-        'Could not create course. Ensure titles are unique.',
-      );
-    }
-  }
-
   // Join Cell
   async joinCell(userId: string, cellId: string) {
     const cell = await this.prisma.cell.findUnique({
@@ -820,47 +783,6 @@ export class ChurchService {
     if (!user) throw new NotFoundException('User not found');
 
     return user.smallGroups;
-  }
-
-  // Get Courses
-  async getAllCourses() {
-    return this.prisma.course.findMany({
-      where: {
-        isActive: true,
-      },
-      include: {
-        _count: {
-          select: {
-            sessions: true,
-            enrollments: true,
-          },
-        },
-        // sessions: { select: { title: true, order: true } }
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-  }
-
-  // Course by id
-  async getUniqueCourse(id: string) {
-    const course = await this.prisma.course.findUnique({
-      where: { id },
-      include: {
-        sessions: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
-      },
-    });
-
-    if (!course) {
-      throw new NotFoundException(`Course with ID ${id} not found`);
-    }
-
-    return course;
   }
 
   // Delete Teams
