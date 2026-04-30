@@ -25,9 +25,9 @@ import { BullModule } from '@nestjs/bullmq';
         // host: process.env.REDIS_HOST || 'localhost',
         // port: parseInt(process.env.REDIS_PORT as any) || 6379,
         url: process.env.REDIS_URL || 'redis://localhost:6379',
-        // tls: {
-        //   rejectUnauthorized: false, // Required for some serverless Redis providers
-        // },
+        tls: {
+          rejectUnauthorized: false, // Required for some serverless Redis providers
+        },
       },
     }),
     PrismaModule,
