@@ -12,12 +12,23 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { EventsModule } from './modules/events/events.module';
 import { ManagementModule } from './modules/management/management.module';
 import { CourseModule } from './modules/course/course.module';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env'],
+    }),
+    BullModule.forRoot({
+      connection: {
+        // host: process.env.REDIS_HOST || 'localhost',
+        // port: parseInt(process.env.REDIS_PORT as any) || 6379,
+        url: process.env.REDIS_URL || 'redis://localhost:6379',
+        // tls: {
+        //   rejectUnauthorized: false, // Required for some serverless Redis providers
+        // },
+      },
     }),
     PrismaModule,
     AuthModule,

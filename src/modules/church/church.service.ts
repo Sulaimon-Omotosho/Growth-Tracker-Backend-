@@ -6,10 +6,14 @@ import {
 } from '@nestjs/common';
 import { isNegative } from 'class-validator';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ChurchService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   private async validateLeader(leaderId: string) {
     const pastor = await this.prisma.user.findUnique({
@@ -501,24 +505,28 @@ export class ChurchService {
 
   // Join Department
   async joinDept(userId: string, deptId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        _count: {
-          select: { departments: true },
-        },
-      },
-    });
+    const [user, department] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { _count: { select: { departments: true } } },
+      }),
+      this.prisma.department.findUnique({
+        where: { id: deptId },
+        select: { id: true, name: true, leaderId: true },
+      }),
+    ]);
 
-    if (user!._count.departments >= 3) {
+    if (!user) throw new NotFoundException('User not found');
+    if (!department) throw new NotFoundException('Department not found');
+
+    if (user._count.departments >= 3) {
       throw new BadRequestException('You can only join max 3 departments.');
     }
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         departments: {
-          // disconnect: {id: deptId},
           connect: { id: deptId },
         },
       },
@@ -528,6 +536,20 @@ export class ChurchService {
         },
       },
     });
+
+    // Queue the Notification for the Leader
+    if (department.leaderId) {
+      this.notificationsService.createNotification({
+        recipientId: department.leaderId,
+        senderId: userId,
+        title: 'New Department Member',
+        message: `${updatedUser.username || 'A user'} has joined the ${department.name} department.`,
+        type: 'REQUEST',
+        link: `/dashboard/management_hub`,
+      });
+    }
+
+    return updatedUser;
   }
 
   // Get All Teams
