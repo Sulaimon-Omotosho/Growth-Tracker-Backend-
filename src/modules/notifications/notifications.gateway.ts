@@ -30,7 +30,10 @@ export class NotificationGateway implements OnGatewayConnection {
   }
 
   // Helper method to call from your Processor
-  sendNotificationToUser(userId: string, notification: any) {
-    this.server.to(userId).emit('new_notification', notification);
+  // sendNotificationToUser(userId: string, notification: any) {
+  //   this.server.to(userId).emit('new_notification', notification);
+  // }
+  sendNotificationToUsers(userIds: string | string[], notification: any) {
+    this.server.to(userIds).emit('new_notification', notification);
   }
 }

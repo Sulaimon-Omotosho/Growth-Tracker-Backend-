@@ -300,7 +300,15 @@ export class ChurchService {
     await this.validateLeader(leaderId);
 
     return this.prisma.department.create({
-      data: { name, leaderId, description, churchTeamId, email },
+      data: {
+        name,
+        leaderId,
+        description,
+        churchTeamId,
+        email,
+        onboardingRoom: { create: {} },
+      },
+      include: { onboardingRoom: true },
     });
   }
 
@@ -406,7 +414,7 @@ export class ChurchService {
 
     await this.validateLeader(leaderId);
 
-    return this.prisma.cell.create({
+    const cell = await this.prisma.cell.create({
       data: {
         name,
         isOnline,
@@ -424,8 +432,30 @@ export class ChurchService {
               },
             }
           : undefined,
+
+        onboardingRoom: {
+          create: {},
+        },
       },
-      include: { address: true },
+      include: {
+        address: true,
+        onboardingRoom: true,
+        community: true,
+        zone: true,
+      },
+    });
+
+    const recipients = [
+      leaderId,
+      cell.zone?.leaderId,
+      cell.community?.leaderId,
+    ].filter(Boolean);
+
+    await this.notificationsService.createNotification({
+      recipientIds: recipients,
+      title: 'New Cell Created',
+      message: `The cell "${name}" has been successfully created and attached to your administrative area.`,
+      type: 'ANNOUNCEMENT',
     });
   }
 
@@ -539,8 +569,8 @@ export class ChurchService {
 
     // Queue the Notification for the Leader
     if (department.leaderId) {
-      this.notificationsService.createNotification({
-        recipientId: department.leaderId,
+      await this.notificationsService.createNotification({
+        recipientIds: [department.leaderId],
         senderId: userId,
         title: 'New Department Member',
         message: `${updatedUser.username || 'A user'} has joined the ${department.name} department.`,

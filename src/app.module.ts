@@ -13,6 +13,8 @@ import { EventsModule } from './modules/events/events.module';
 import { ManagementModule } from './modules/management/management.module';
 import { CourseModule } from './modules/course/course.module';
 import { BullModule } from '@nestjs/bullmq';
+import { WorkforceModule } from './modules/workforce/workforce.module';
+import { SmallGroupsModule } from './modules/small-groups/small-groups.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { BullModule } from '@nestjs/bullmq';
     EventsModule,
     ManagementModule,
     CourseModule,
+    WorkforceModule,
+    SmallGroupsModule,
   ],
   controllers: [HealthController],
   providers: [

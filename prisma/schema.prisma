@@ -64,7 +64,7 @@ model User {
   classAttendance  SessionAttendance[]
   courseEnrollment CourseEnrollment[]
   
-
+  onboardingParticipations OnboardingParticipant[]
 }
 
 model Address {
@@ -159,6 +159,8 @@ model Cell {
   leader      User?     @relation("CellLeader", fields: [leaderId], references: [id])
   zone        Zone      @relation(fields: [zoneId], references: [id])
   users       User[]
+  
+  onboardingRoom  OnboardingRoom?       
 }
 
 model ChurchTeam {
@@ -186,6 +188,8 @@ model Department {
   depTeams     DepTeam[]
   churchTeam   ChurchTeam @relation(fields: [churchTeamId], references: [id])
   members      User[]     @relation("UserDepartments")
+
+  onboardingRoom  OnboardingRoom?       
 }
 
 model DepTeam {
@@ -501,4 +505,43 @@ model SessionAttendance {
 enum AttendanceMode {
   PHYSICAL
   ONLINE
+}
+
+model OnboardingRoom {
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  departmentId  String?  @unique
+  department    Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  
+  cellId        String?  @unique
+  cell          Cell?    @relation(fields: [cellId], references: [id], onDelete: Cascade)
+
+  applicants    OnboardingParticipant[]
+}
+
+model OnboardingParticipant {
+  id               String           @id @default(uuid())
+  joinedAt         DateTime         @default(now())
+
+  expectedEndDate  DateTime
+  
+  status           OnboardingStatus @default(ONBOARDING)
+  extensionWeeks   Int              @default(0)
+
+  userId           String
+  user             User             @relation(fields: [userId], references: [id])
+  
+  onboardingRoomId String
+  onboardingRoom   OnboardingRoom   @relation(fields: [onboardingRoomId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, onboardingRoomId])
+}
+
+enum OnboardingStatus {
+  ONBOARDING
+  EXTENDED
+  APPROVED
+  REJECTED
 }

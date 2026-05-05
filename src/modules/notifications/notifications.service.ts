@@ -1,31 +1,3 @@
-// import { Injectable } from '@nestjs/common';
-// import { CreateNotificationDto } from './dto/create-notification.dto';
-// import { UpdateNotificationDto } from './dto/update-notification.dto';
-
-// @Injectable()
-// export class NotificationsService {
-//   create(createNotificationDto: CreateNotificationDto) {
-//     return 'This action adds a new notification';
-//   }
-
-//   findAll() {
-//     return `This action returns all notifications`;
-//   }
-
-//   findOne(id: number) {
-//     return `This action returns a #${id} notification`;
-//   }
-
-//   update(id: number, updateNotificationDto: UpdateNotificationDto) {
-//     return `This action updates a #${id} notification`;
-//   }
-
-//   remove(id: number) {
-//     return `This action removes a #${id} notification`;
-//   }
-// }
-
-// apps/api/src/modules/notifications/notification.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -39,11 +11,8 @@ export class NotificationsService {
     private prisma: PrismaService,
   ) {}
 
-  // Queue a new notification (Producer)
-  // apps/api/src/modules/notifications/notification.service.ts
-
   async createNotification(data: {
-    recipientId: string;
+    recipientIds: string[];
     senderId?: string;
     title: string;
     message?: string;
