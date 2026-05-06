@@ -47,15 +47,15 @@ export class UsersService {
   }
 
   // Check Email Availability
-async isEmailTaken(email: string, excludeId?: string): Promise<boolean> {
-  const count = await this.prisma.user.count({
-    where: {
-      email: { equals: email, mode: 'insensitive' },
-      NOT: excludeId ? { id: excludeId } : undefined,
-    },
-  });
-  return count > 0;
-}
+  async isEmailTaken(email: string, excludeId?: string): Promise<boolean> {
+    const count = await this.prisma.user.count({
+      where: {
+        email: { equals: email, mode: 'insensitive' },
+        NOT: excludeId ? { id: excludeId } : undefined,
+      },
+    });
+    return count > 0;
+  }
 
   // Me
   async getMe(user: any) {
@@ -64,26 +64,32 @@ async isEmailTaken(email: string, excludeId?: string): Promise<boolean> {
     const found = await this.prisma.user.findUnique({
       where: { id: user.id },
       include: {
-        cell: {include: {
-          leader: true,
-
-        }},
-        departments: {include: {
-          leader: true,
-          churchTeam: true,
-        }},
+        cell: {
+          include: {
+            leader: true,
+          },
+        },
+        departments: {
+          include: {
+            leader: true,
+            churchTeam: true,
+          },
+        },
+        onboardingParticipations: true,
         zone: true,
         growthRecord: true,
         address: true,
         _count: {
-        select: {
-          leadsCell: true,
-          leadsChurchTeam: true,
-          leadsCommunity: true,
-          hod: true,
-          leadsSubTeam: true,
-          districtsLed: true,
-            leadsZone: true,},}
+          select: {
+            leadsCell: true,
+            leadsChurchTeam: true,
+            leadsCommunity: true,
+            hod: true,
+            leadsSubTeam: true,
+            districtsLed: true,
+            leadsZone: true,
+          },
+        },
       },
     });
 
@@ -94,31 +100,31 @@ async isEmailTaken(email: string, excludeId?: string): Promise<boolean> {
   // Get User Groups
   async getUserGroups(userId: string) {
     return this.prisma.user.findUnique({
-      where: {id: userId},
+      where: { id: userId },
       select: {
         cell: {
           include: {
             users: {
-              select: {id:true, image: true, firstName: true}
-            }
-          }
+              select: { id: true, image: true, firstName: true },
+            },
+          },
         },
         departments: {
           include: {
             members: {
-              select: {id: true, image: true, firstName: true}
-            }
-          }
+              select: { id: true, image: true, firstName: true },
+            },
+          },
         },
         smallGroups: {
           include: {
             members: {
-              select: {id: true, image: true, firstName: true}
-            }
-          }
-        }
-      }
-    })
+              select: { id: true, image: true, firstName: true },
+            },
+          },
+        },
+      },
+    });
   }
 
   // All Users
@@ -188,31 +194,31 @@ async isEmailTaken(email: string, excludeId?: string): Promise<boolean> {
   }
 
   // Update Address
-async updateAddress(userId: string, body: any) {
-  if (!userId) throw new BadRequestException('User ID is required');
+  async updateAddress(userId: string, body: any) {
+    if (!userId) throw new BadRequestException('User ID is required');
 
-  const user = await this.prisma.user.findUnique({
-    where: { id: userId },
-    select: { addressId: true },
-  });
-
-  if (user?.addressId) {
-    return this.prisma.address.update({
-      where: { id: user.addressId },
-      data: body,
-    });
-  } else {
-    return this.prisma.user.update({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      data: {
-        address: {
-          create: body,
-        },
-      },
-      include: { address: true },
+      select: { addressId: true },
     });
+
+    if (user?.addressId) {
+      return this.prisma.address.update({
+        where: { id: user.addressId },
+        data: body,
+      });
+    } else {
+      return this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          address: {
+            create: body,
+          },
+        },
+        include: { address: true },
+      });
+    }
   }
-}
 
   // Debug
   async debugUsers() {

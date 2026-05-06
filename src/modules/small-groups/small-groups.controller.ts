@@ -19,7 +19,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt/jwt.guard';
 export class SmallGroupsController {
   constructor(private readonly smallGroupsService: SmallGroupsService) {}
 
-  @Post('join/:id/')
+  @Post('join/:id')
   async joinCell(@Req() req: any, @Param('id') cellId: string) {
     const userId = req.user.id;
     return this.smallGroupsService.joinCell(userId, cellId);
