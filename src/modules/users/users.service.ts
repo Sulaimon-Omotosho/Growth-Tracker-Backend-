@@ -114,7 +114,7 @@ export class UsersService {
       where: { id: id },
       select: {
         onboardingParticipations: {
-          select: {
+          include: {
             onboardingRoom: {
               include: {
                 cell: true,
