@@ -35,6 +35,11 @@ export class SmallGroupsController {
     return this.smallGroupsService.findOne(+id);
   }
 
+  @Get('onboarding/room/:id')
+  onboardingRoom(@Param('id') id: string) {
+    return this.smallGroupsService.onboardingRoom(id);
+  }
+
   @Patch('onboarding/extend/:participantId')
   async extendOnboarding(
     @Param('participantId') participantId: string,

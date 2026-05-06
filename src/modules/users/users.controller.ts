@@ -40,13 +40,13 @@ export class UsersController {
 
   @Get('check/email')
   async checkEmail(@Query('email') email: string, @Req() req: any) {
-    if (!email) return {available: true}
+    if (!email) return { available: true };
 
     const userId = req.user?.id;
 
-    const isTaken = await this.usersService.isEmailTaken(email, userId)
+    const isTaken = await this.usersService.isEmailTaken(email, userId);
 
-    return { available: !isTaken}
+    return { available: !isTaken };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -59,6 +59,11 @@ export class UsersController {
   @Get('me/groups')
   myGroups(@Req() req: any) {
     return this.usersService.getUserGroups(req.user.id);
+  }
+
+  @Get('onboarding/me')
+  myOnboardings(@Req() req: any) {
+    return this.usersService.getMyOnboardings(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)

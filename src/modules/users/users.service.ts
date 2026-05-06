@@ -106,6 +106,30 @@ export class UsersService {
     return found;
   }
 
+  // Onboardings
+  async getMyOnboardings(user: any) {
+    if (!user.id) throw new ForbiddenException('Unauthenticated');
+
+    const onboardings = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        onboardingParticipations: {
+          select: {
+            onboardingRoom: {
+              include: {
+                cell: true,
+                department: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!onboardings) throw new NotFoundException('Onboardings not found');
+    return onboardings;
+  }
+
   // Get User Groups
   async getUserGroups(userId: string) {
     return this.prisma.user.findUnique({

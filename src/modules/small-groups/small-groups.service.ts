@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -70,11 +71,24 @@ export class SmallGroupsService {
     return participant;
   }
 
+  // Onboarding
   async extendOnboarding(participantId: string, weeks: 2 | 4) {
     const participant = await this.prisma.onboardingParticipant.findUnique({
       where: { id: participantId },
       include: {
-        onboardingRoom: { include: { cell: true, department: true } },
+        onboardingRoom: {
+          include: {
+            cell: {
+              select: {
+                name: true,
+                leader: {
+                  select: { id: true, firstName: true, lastName: true },
+                },
+              },
+            },
+            department: { select: { name: true } },
+          },
+        },
       },
     });
 
@@ -150,6 +164,18 @@ export class SmallGroupsService {
       });
 
       return { success: true };
+    });
+  }
+
+  async onboardingRoom(id: string) {
+    if (!id) throw new ForbiddenException('No room found');
+
+    const room = await this.prisma.onboardingRoom.findUnique({
+      where: { id },
+      include: {
+        cell: true,
+        department: true,
+      },
     });
   }
 
