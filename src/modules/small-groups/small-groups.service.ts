@@ -74,7 +74,7 @@ export class SmallGroupsService {
     const participant = await this.prisma.onboardingParticipant.findUnique({
       where: { id: participantId },
       include: {
-        onboardingRoom: { include: { cell: true } },
+        onboardingRoom: { include: { cell: true }, department: true },
       },
     });
 

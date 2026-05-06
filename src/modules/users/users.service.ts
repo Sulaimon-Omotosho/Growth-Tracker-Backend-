@@ -75,7 +75,16 @@ export class UsersService {
             churchTeam: true,
           },
         },
-        onboardingParticipations: true,
+        onboardingParticipations: {
+          select: {
+            onboardingRoom: {
+              include: {
+                cell: true,
+                department: true,
+              },
+            },
+          },
+        },
         zone: true,
         growthRecord: true,
         address: true,
