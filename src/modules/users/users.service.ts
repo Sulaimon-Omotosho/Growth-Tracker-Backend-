@@ -107,11 +107,11 @@ export class UsersService {
   }
 
   // Onboardings
-  async getMyOnboardings(user: any) {
-    if (!user.id) throw new ForbiddenException('Unauthenticated');
+  async getMyOnboardings(id: any) {
+    if (!id) throw new ForbiddenException('Unauthenticated');
 
     const onboardings = await this.prisma.user.findUnique({
-      where: { id: user.id },
+      where: { id: id },
       select: {
         onboardingParticipations: {
           select: {
