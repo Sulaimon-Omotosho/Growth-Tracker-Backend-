@@ -7,12 +7,15 @@ import {
   Param,
   Delete,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { SmallGroupsService } from './small-groups.service';
 import { CreateSmallGroupDto } from './dto/create-small-group.dto';
 import { UpdateSmallGroupDto } from './dto/update-small-group.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt/jwt.guard';
 
 @Controller('small-groups')
+@UseGuards(JwtAuthGuard)
 export class SmallGroupsController {
   constructor(private readonly smallGroupsService: SmallGroupsService) {}
 
