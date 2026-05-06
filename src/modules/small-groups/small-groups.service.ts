@@ -66,6 +66,8 @@ export class SmallGroupsService {
       message: `Onboarding process started for ${cell.name}. Probation period: 4 weeks.`,
       type: 'REQUEST',
     });
+
+    return participant;
   }
 
   async extendOnboarding(participantId: string, weeks: 2 | 4) {
