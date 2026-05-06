@@ -16,7 +16,7 @@ import { UpdateSmallGroupDto } from './dto/update-small-group.dto';
 export class SmallGroupsController {
   constructor(private readonly smallGroupsService: SmallGroupsService) {}
 
-  @Post(':id/join')
+  @Post('join/:id/')
   async joinCell(@Req() req: any, @Param('id') cellId: string) {
     const userId = req.user.id;
     return this.smallGroupsService.joinCell(userId, cellId);
@@ -32,7 +32,7 @@ export class SmallGroupsController {
     return this.smallGroupsService.findOne(+id);
   }
 
-  @Patch('onboarding/:participantId/extend')
+  @Patch('onboarding/extend/:participantId')
   async extendOnboarding(
     @Param('participantId') participantId: string,
     @Body('weeks') weeks: 2 | 4,
@@ -40,7 +40,7 @@ export class SmallGroupsController {
     return this.smallGroupsService.extendOnboarding(participantId, weeks);
   }
 
-  @Patch('onboarding/:participantId/approve')
+  @Patch('onboarding/approve/:participantId')
   async approveMember(@Param('participantId') participantId: string) {
     return this.smallGroupsService.approveMember(participantId);
   }
