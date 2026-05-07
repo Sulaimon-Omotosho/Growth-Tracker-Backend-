@@ -177,6 +177,7 @@ export class SmallGroupsService {
         department: true,
       },
     });
+    return room;
   }
 
   create(createSmallGroupDto: CreateSmallGroupDto) {
