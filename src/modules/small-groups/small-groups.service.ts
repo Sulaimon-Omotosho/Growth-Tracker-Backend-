@@ -171,7 +171,7 @@ export class SmallGroupsService {
     if (!id) throw new ForbiddenException('No room found');
 
     const room = await this.prisma.onboardingRoom.findUnique({
-      where: { id },
+      where: { id: id },
       include: {
         cell: true,
         department: true,
