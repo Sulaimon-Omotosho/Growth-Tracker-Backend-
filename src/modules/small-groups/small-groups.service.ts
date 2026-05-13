@@ -142,9 +142,12 @@ export class SmallGroupsService {
         },
       });
 
-      await tx.onboardingParticipant.update({
+      // await tx.onboardingParticipant.update({
+      //   where: { id: participantId },
+      //   data: { status: 'APPROVED' },
+      // });
+      await tx.onboardingParticipant.delete({
         where: { id: participantId },
-        data: { status: 'APPROVED' },
       });
 
       const existingMemberIds = cell?.users.map((m) => m.id) || [];
@@ -167,17 +170,129 @@ export class SmallGroupsService {
     });
   }
 
-  async onboardingRoom(id: string) {
-    if (!id) throw new ForbiddenException('No room found');
+  async onboardingRoom(roomId: string, userId: string) {
+    if (!roomId) throw new ForbiddenException('No room found');
 
     const room = await this.prisma.onboardingRoom.findUnique({
-      where: { id: id },
+      where: { id: roomId },
       include: {
-        cell: true,
+        cell: {
+          include: {
+            leader: true,
+          },
+        },
         department: true,
+        applicants: {
+          where: { userId: userId },
+          include: {
+            user: true,
+          },
+        },
       },
     });
+    return {
+      ...room,
+      currentUserParticipation: room?.applicants[0] || null,
+    };
+  }
+
+  async exitOnboarding(roomId: string, userId: string) {
+    const participation = await this.prisma.onboardingParticipant.findUnique({
+      where: { userId_onboardingRoomId: { userId, onboardingRoomId: roomId } },
+      include: {
+        onboardingRoom: { include: { cell: true, department: true } },
+      },
+    });
+
+    if (!participation)
+      throw new NotFoundException('Onboarding record not found');
+
+    const groupName =
+      participation.onboardingRoom.cell?.name ||
+      participation.onboardingRoom.department?.name;
+
+    await this.prisma.onboardingParticipant.delete({
+      where: { id: participation.id },
+    });
+
+    const leaderId =
+      participation.onboardingRoom.cell?.leaderId ||
+      participation.onboardingRoom.department?.leaderId;
+
+    const recipients = [userId, leaderId].filter(Boolean) as string[];
+
+    await this.notificationsService.createNotification({
+      recipientIds: recipients,
+      senderId: userId,
+      title: 'Onboarding Cancelled',
+      message: `The onboarding process for ${groupName} has been terminated by the user.`,
+      type: 'ANNOUNCEMENT',
+    });
+
+    return { message: 'Successfully exited onboarding' };
+  }
+
+  async createOnboardingRoom(cellId: string) {
+    const existingCell = await this.prisma.cell.findUnique({
+      where: { id: cellId },
+      include: { onboardingRoom: true },
+    });
+
+    if (!existingCell) throw new NotFoundException('Cell not found');
+    if (existingCell.onboardingRoom) {
+      throw new ConflictException('This cell already has an onboarding room');
+    }
+
+    const newRoom = await this.prisma.onboardingRoom.create({
+      data: {
+        cell: {
+          connect: { id: cellId },
+        },
+      },
+      include: {
+        cell: true,
+      },
+    });
+
+    // Notify Cell Leader
+    if (existingCell.leaderId) {
+      await this.notificationsService.createNotification({
+        recipientIds: [existingCell.leaderId],
+        title: 'Onboarding Room Created',
+        message: `The onboarding/probation room for ${existingCell.name} has been successfully initialized. You can now manage applicants.`,
+        type: 'ANNOUNCEMENT',
+      });
+    }
+
+    return newRoom;
+  }
+
+  async getRoomParticipants(roomId: string) {
+    const room = await this.prisma.onboardingRoom.findUnique({
+      where: { id: roomId },
+      include: {
+        department: true,
+        cell: true,
+        applicants: { include: { user: true } },
+      },
+    });
+
+    if (!room) return [];
     return room;
+  }
+
+  // CELL
+  async findCell(id: string) {
+    const cell = await this.prisma.cell.findUnique({
+      where: { id: id },
+      include: {
+        address: true,
+        users: true,
+        onboardingRoom: true,
+        _count: { select: { users: true } },
+      },
+    });
+    return cell;
   }
 
   create(createSmallGroupDto: CreateSmallGroupDto) {
@@ -186,10 +301,6 @@ export class SmallGroupsService {
 
   findAll() {
     return `This action returns all smallGroups`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} smallGroup`;
   }
 
   update(id: number, updateSmallGroupDto: UpdateSmallGroupDto) {

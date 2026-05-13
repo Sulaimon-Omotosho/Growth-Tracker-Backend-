@@ -30,14 +30,25 @@ export class SmallGroupsController {
     return this.smallGroupsService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.smallGroupsService.findOne(+id);
+  @Get('cell/:id')
+  findCell(@Param('id') id: string) {
+    return this.smallGroupsService.findCell(id);
   }
 
-  @Get('onboarding/room/:id')
-  onboardingRoom(@Param('id') id: string) {
-    return this.smallGroupsService.onboardingRoom(id);
+  @Post('cell/:id/onboarding/init')
+  async initOnboardingRoom(@Param('id') cellId: string) {
+    return this.smallGroupsService.createOnboardingRoom(cellId);
+  }
+
+  @Get('onboarding-room/:roomId')
+  onboardingRoom(@Param('roomId') roomId: string, @Req() req: any) {
+    const userId = req.user.id;
+    return this.smallGroupsService.onboardingRoom(roomId, userId);
+  }
+
+  @Get('onboarding-room/participants/:roomId')
+  async getRoomParticipants(@Param('roomId') roomId: string) {
+    return this.smallGroupsService.getRoomParticipants(roomId);
   }
 
   @Patch('onboarding/extend/:participantId')
@@ -51,6 +62,12 @@ export class SmallGroupsController {
   @Patch('onboarding/approve/:participantId')
   async approveMember(@Param('participantId') participantId: string) {
     return this.smallGroupsService.approveMember(participantId);
+  }
+
+  @Delete('onboarding/exit/:roomId')
+  async exitOnboarding(@Param('roomId') roomId: string, @Req() req: any) {
+    const userId = req.user.id;
+    return this.smallGroupsService.exitOnboarding(roomId, userId);
   }
 
   @Delete(':id')
